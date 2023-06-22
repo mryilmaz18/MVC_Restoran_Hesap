@@ -1,0 +1,287 @@
+﻿@model Tuple<IEnumerable<SelectListItem>, IEnumerable<SelectListItem>, IEnumerable<SelectListItem>>
+@{
+    ViewBag.Title = "Index";
+}
+
+<script src="~/Scripts/jquery-3.4.1.min.js"></script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $("#Item").val(0);
+        $("#Item").change(function () {
+            var ItemId = $("#Item").val();
+            GetItemBirimFiyat(ItemId);
+        });
+        $("input[type=text]").change(function () {
+            AraToplamHesapla();
+        });
+        $("input[type=text]").keyup(function () {
+            BakiyeHesap();
+        });
+        $("#btnlisteyeEkle").click(function () {
+            ListEkle();
+        });
+    })
+
+    function KaldırItem(ItemId) {
+        $(ItemId).closest('tr').remove();
+    }
+
+    function Myfunction() {
+        alert("Ödeme Başarıyla Gerçekleşti");
+    }
+
+    function ListEkle() {
+        var tblItemList = $("#tblRestoranItemListe");
+        var BirimFiyat = $("#TxtBirimFiyat").val();
+        var Miktar = $("#TxtMiktar").val();
+        var Indirim = $("#TxtIndirim").val();
+        var ItemId = $("#Item").val();
+        var ItemName = $("#Item option:selected").text();
+        var Toplam = (BirimFiyat * Miktar) - Indirim;
+        var ItemList = "<tr><td hidden>" + ItemId + "</td><td>" + ItemName + "</td><td>"
+            + parseFloat(BirimFiyat).toFixed(2) + "</td><td>" + parseFloat(Miktar).toFixed(2) +
+            "</td><td>" + parseFloat(Indirim).toFixed(2) + "</td><td>" + parseFloat(Toplam).toFixed(2) +
+            "</td><td> <input type='button' value='Kaldır' name='kaldır' class='btn btn-danger' onclick='KaldırItem(this)'/></tr></tr>";
+        tblItemList.append(ItemList);
+        FinalItemToplam();
+        ListTemizle();
+    }
+
+    function ListTemizle() {
+        $("#TxtBirimFiyat").val('');
+        $("#TxtMiktar").val('');
+        $("#TxtIndirim").val('0.00');
+        $("#Item").val(0);
+        $("#TxtToplam").val('');
+
+    }
+    function FinalItemToplam() {
+        $("#TxtFinalToplam").val("0.00");
+        var FinalToplam = 0.00;
+        $("#tblRestoranItemListe").find("tr:gt(0)").each(function () {
+            var Toplam = parseFloat($(this).find("td:eq(5)").text());
+            FinalToplam += Toplam
+        })
+        $("#TxtFinalToplam").val(parseFloat(FinalToplam).toFixed(2));
+        $("#txtToplamOdeme").val(parseFloat(FinalToplam).toFixed(2));
+        $("#txtBakiye").val(parseFloat(FinalToplam).toFixed(2));
+    }
+    function BakiyeHesap() {
+        var FinalHesap = $("#TxtFinalToplam").val();
+        var OdenecekTutar = $("#txtOdenecekTutar").val();
+        var ToplamIade = $("#txtToplamİade").val();
+        var BakiyeHesap = parseFloat(FinalHesap) - parseFloat(OdenecekTutar) + parseFloat(ToplamIade);
+        $("#txtBakiye").val(parseFloat(BakiyeHesap).toFixed(2));
+        if (parseFloat(BakiyeHesap) == 0)
+        {
+            $("#btnOdeme").removeAttr("disabled");
+        }
+        else
+        {
+            $("#btnOdeme").attr("disabled", "disabled");
+        }
+    }
+
+    function AraToplamHesapla() {
+        var BirimFiyat = $("#TxtBirimFiyat").val();
+        var Miktar = $("#TxtMiktar").val();
+        var Indirim = $("#TxtIndirim").val();
+        var Toplam = (BirimFiyat * Miktar) - Indirim;
+        $("#TxtToplam").val(parseFloat(Toplam).toFixed(2));
+
+    }
+
+    function GetItemBirimFiyat(ItemId) {
+        $.ajax({
+            async: true,
+            type: 'GET',
+            dataType: 'JSON',
+            contentType: 'application/json;charset=utf-8',
+            data: { ItemId: ItemId },
+            url: '/home/getItemBirimFiyat',
+            success: function (data) {
+                $('#TxtBirimFiyat').val(parseFloat(data).toFixed(2));
+            },
+            error: function () {
+                alert("Birim Fiyatta Sorun Var");
+            }
+        })
+    }
+
+</script>
+
+
+<style>
+    fieldset {
+        border: 1px solid #ddd !important;
+        margin: 0;
+        padding: 10px;
+        position: relative;
+        border-radius: 4px;
+        background-color: #0094ff;
+        padding-left: 10px !important;
+    }
+
+    legend {
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 0px;
+        width: 35%;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 5px 5px 5px 10px;
+        background-color: #cb9065;
+    }
+</style>
+
+<fieldset>
+    <legend>Lezzet Dünyası</legend>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    Müşteri:
+                    @Html.DropDownList(name: "Musteri", selectList: new SelectList(Model.Item1, dataValueField: "Value", dataTextField: "Text"),
+                   htmlAttributes: new { @class = "form-control" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    Ödeme Şekli:
+                    @Html.DropDownList(name: "OdemeSekli", selectList: new SelectList(Model.Item3, dataValueField: "Value", dataTextField: "Text"),
+                   htmlAttributes: new { @class = "form-control" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    Toplam Hesap:
+                    <input type="text" readonly="readonly" id="TxtFinalToplam" value="0.00" name="FinalToplam" class="form-control" />
+                </div>
+            </div>
+        </div>
+    </div>
+</fieldset>
+<fieldset>
+    <legend> Restoran İçerik</legend>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    Items:
+                    @Html.DropDownList(name: "Item", selectList: new SelectList(Model.Item2, dataValueField: "Value", dataTextField: "Text"),
+                   htmlAttributes: new { @class = "form-control" })
+                </div>
+
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    Birim Fiyat:
+                    <input type="text" readonly="readonly" id="TxtBirimFiyat" value="0.00" name="BirimFiyat" class="form-control" />
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    Miktar:
+                    <input type="text" id="TxtMiktar" value="0.00" name="Miktar" class="form-control" />
+
+                </div>
+
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    İndirim:
+                    <input type="text" id="TxtIndirim" value="0.00" name="Indirim" class="form-control" />
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    Toplam:
+                    <input type="text" id="TxtToplam" value="0.00" name="Toplam" class="form-control" />
+
+                </div>
+
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <input type="button" style="margin-top:20px" value="Listeye Ekle" name="ListeyeEkle" id="btnlisteyeEkle" class="btn btn-warning" />
+                </div>
+            </div>
+        </div>
+    </div>
+</fieldset>
+<fieldset>
+    <legend>Restoran Ürün Listesi</legend>
+    <table style="width:100%" id="tblRestoranItemListe">
+        <thead>
+            <tr>
+                <th hidden>
+                    Item Id
+                </th>
+                <th>
+                    Item Name
+                </th>
+                <th>
+                    Birim Fiyat
+                </th>
+                <th>
+                    Miktar
+                </th>
+                <th>
+                    İndirim
+                </th>
+                <th>
+                    Toplam
+                </th>
+                <th>
+                    Durum
+                </th>
+            </tr>
+        </thead>
+    </table>
+</fieldset>
+<div style="margin-top:10px">
+    <input data-toggle="modal" data-target="#divÖdeme" style="float:right" type="button" value="ÖdemeYap" name="ödemeyap" id="btnÖdemeYap" class="btn btn-primary" />
+</div>
+<div id="divÖdeme" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Ödeme Sayfası</h4>
+            </div>
+            <div class="modal-body">
+                <div class="container">
+                    <div class="row">
+                        <div class="form-group col-md-3">
+                            Toplam Ödeme:
+                            <input type="text" id="txtToplamOdeme" readonly="readonly" value="0.00" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-3">
+                            Ödenecek Tutar:
+                            <input type="text" id="txtOdenecekTutar" value="0.00" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-md-3">
+                            Toplam İade:
+                            <input type="text" id="txtToplamİade" value="0.00" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-3">
+                            Bakiye:
+                            <input type="text" readonly="readonly" id="txtBakiye" value="0.00" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" id="btnOdeme"onclick="Myfunction()" value="Odeme">Ödeme</button>
+                <button class="btn btn-danger" id="btnKapat" data-dismiss="modal" value="Kapat">Kapat</button>
+            </div>
+        </div>
+
+    </div>
+</div>
